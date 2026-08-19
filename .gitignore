@@ -8,3 +8,7 @@ __pycache__/
 # Environment variables
 .env
 .streamlit/secrets.toml
+
+# IDE agent/skill folders
+.agents/
+.claude/
