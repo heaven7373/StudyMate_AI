@@ -4,7 +4,7 @@ from langchain_qdrant import QdrantVectorStore
 from langchain_huggingface import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 import os
-from groq import Groq
+from openai import OpenAI
 load_dotenv()
 
 try:
@@ -49,7 +49,12 @@ if uploaded_files:
 
         # --- Retrieval and AI Response Generation ---
         with st.spinner("Thinking..."):
-            client = Groq()
+            # Use OpenAI client configured for xAI
+            api_key = os.getenv("XAI_API_KEY") or os.getenv("GROQ_API_KEY")
+            client = OpenAI(
+                api_key=api_key,
+                base_url="https://api.x.ai/v1",
+            )
             embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
             vector_db = QdrantVectorStore.from_existing_collection(
                 url=qdrant_url,
@@ -78,7 +83,7 @@ if uploaded_files:
             # Get the response from the AI
             
             response_stream = client.chat.completions.create(
-                model="groq/compound-mini",
+                model="grok-beta", # You can change this to grok-4.7 or other models
                 messages=[
                     {"role": "system", "content": SYSTEM_PROMPT},
                     {"role": "user", "content": query}
