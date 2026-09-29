@@ -26,7 +26,6 @@ qdrant_url =QDRANT_URL
 qdrant_key= QDRANT_API_KEY
 QDRANT_COLLECTION_NAME="PDF_Rag_Agent"
 
-@st.cache_resource  
 def indexing(files):
     
 
