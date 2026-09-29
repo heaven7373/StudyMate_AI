@@ -33,14 +33,14 @@ if "indexing_done" not in st.session_state:
     st.session_state.indexing_done = False
 
 # --- File Uploader and Indexing ---
-uploaded_file = st.file_uploader("Choose a PDF file to begin", type="pdf")
+uploaded_files = st.file_uploader("Choose PDF files to begin", type="pdf", accept_multiple_files=True)
 
-if uploaded_file:
+if uploaded_files:
     if not st.session_state.indexing_done:
-        with st.spinner("Analyzing and indexing the document... This may take a moment."):
-            indexing(uploaded_file)
+        with st.spinner("Analyzing and indexing the documents... This may take a moment."):
+            indexing(uploaded_files)
             st.session_state.indexing_done = True
-        st.success("Document indexed successfully! You can now ask questions.")
+        st.success("Documents indexed successfully! You can now ask questions.")
     
     # --- Chat Logic ---
     if query := st.chat_input("Ask a question about your document"):
@@ -61,14 +61,14 @@ if uploaded_file:
             # Retrieve relevant context
             search_results = vector_db.similarity_search(query=query)
             context = "\n\n".join(
-                f"Page Content: {result.page_content}\nPage Number: {result.metadata['page']}"
+                f"Source: {result.metadata.get('source', 'Unknown')}, Page: {result.metadata['page']}\nContent: {result.page_content}"
                 for result in search_results
             )
 
             # Create the system prompt
             SYSTEM_PROMPT = f"""
-            You are a helpful AI assistant. Your task is to answer the user's query based ONLY on the provided context from a PDF file.
-            Provide a concise answer and cite the page number(s) from where the information was retrieved.
+            You are a helpful AI assistant. Your task is to answer the user's query based ONLY on the provided context from the uploaded documents.
+            Provide a concise answer and cite the source file and page number(s) from where the information was retrieved.
             If the information is not present, state that you cannot find the answer in the document.
 
             Context:

@@ -27,7 +27,7 @@ qdrant_key= QDRANT_API_KEY
 QDRANT_COLLECTION_NAME="PDF_Rag_Agent"
 
 @st.cache_resource  
-def indexing(file):
+def indexing(files):
     
 
     #To delete the old collection from vector DB
@@ -44,31 +44,29 @@ def indexing(file):
         # It's safe to ignore this specific error.
         st.write(f"Collection did not exist or another error occurred: {e}")
 
+    all_split_docs = []
 
-
-
-
-
-
-    #Step 1 Loading of the file.
-    pdf_bytes=file.read()
-
-    pdf_stream=BytesIO(pdf_bytes)
-
-    docs=fitz.open(stream=pdf_stream)
-    pages=[]
-    for i,page in enumerate(docs):
-        text=page.get_text() 
-        pages.append(Document(page_content=text,metadata={"page":i+1}))
-    #Why I did this because in langcahi for splitting purpose we need lanchain documents and we cannot pass string. thats why  "Document" helps to do this
-        
-
-    #step 2 Chunking of the file
-    text_splitter=RecursiveCharacterTextSplitter(
-        chunk_size=1000, #Dividing the whole data into small small sets (in this case each set will have 1000 caracters)
-        chunk_overlap=400 # (chunk_overlap means to get some context of the previous set as well)
-    )
-    split_docs=text_splitter.split_documents(documents=pages)
+    for file in files:
+        #Step 1 Loading of the file.
+        pdf_bytes=file.read()
+    
+        pdf_stream=BytesIO(pdf_bytes)
+    
+        docs=fitz.open(stream=pdf_stream)
+        pages=[]
+        for i,page in enumerate(docs):
+            text=page.get_text() 
+            pages.append(Document(page_content=text,metadata={"page":i+1, "source": file.name}))
+        #Why I did this because in langcahi for splitting purpose we need lanchain documents and we cannot pass string. thats why  "Document" helps to do this
+            
+    
+        #step 2 Chunking of the file
+        text_splitter=RecursiveCharacterTextSplitter(
+            chunk_size=1000, #Dividing the whole data into small small sets (in this case each set will have 1000 caracters)
+            chunk_overlap=400 # (chunk_overlap means to get some context of the previous set as well)
+        )
+        split_docs=text_splitter.split_documents(documents=pages)
+        all_split_docs.extend(split_docs)
 
     # st.write(split_docs)
 
@@ -79,7 +77,7 @@ def indexing(file):
     )
     #Using embedding_model create embeddings of split_docs and store in the vector_db
     QdrantVectorStore.from_documents(
-        documents=split_docs,
+        documents=all_split_docs,
         url=qdrant_url,
         api_key=qdrant_key,
         collection_name="PDF_Rag_Agent",
